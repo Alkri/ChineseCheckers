@@ -21,17 +21,26 @@ public:
     ~GameBoard();
 
 private:
-    //numPlayer:玩家总数 nowPlayerID:当前玩家ID playerList:玩家ID列表
+    //numPlayer:玩家总数   playerList:玩家ID列表
     int numPlayer, nowPlayerID = 1, playerList[7];
 
-    QColor teamColor[7] = {
-        QColor(240, 240, 240),
-        QColor(255, 0, 0),
-        QColor(255, 255, 0),
-        QColor(0, 0, 255),
-        QColor(0, 255, 0),
-        QColor(0, 255, 255),
-        QColor(254, 137, 210)
+    QImage teamColor[7] = {
+        QImage(),
+        QImage(":/images/Resources/images/red.png"),
+        QImage(":/images/Resources/images/orange.png"),
+        QImage(":/images/Resources/images/yellow.png"),
+        QImage(":/images/Resources/images/blue.png"),
+        QImage(":/images/Resources/images/green.png"),
+        QImage(":/images/Resources/images/purple.png")
+    };
+    QString playerName[7] = {
+        QString(),
+        QString("Red"),
+        QString("Orange"),
+        QString("Yellow"),
+        QString("Blue"),
+        QString("Green"),
+        QString("Purple")
     };
     int map[20][20]; //变换后矩阵
     QPointF pos[122]; //对应ID格子中心点坐标
@@ -40,9 +49,8 @@ private:
 
     QLine makeQLine(int i, int j);
     void drawBackgroundLine(QPainter *painter);
-    virtual void paintEvent(QPaintEvent *); //绘制棋盘
     QPointF ix = QPointF(1, 0), iy = QPointF(-0.5, sqrt(3)/2);
-    int dBoard[18] = {0, 1, 2, 3, 4, 13, 12, 11, 10, 9, 10, 11, 12, 13, 4, 3, 2, 1}; //每行格数
+    int dBoard[18] = {0, 1, 2, 3, 4, 13, 12, 11, 10, 9, 10, 11, 12, 13, 4, 3, 2, 1};
 
     void checkWinner();
     int isAbleToReach(int id);
@@ -53,13 +61,16 @@ private:
     int mouseStatus = 0; // 0: unselected   1: selected
     int mouseOnID(QMouseEvent *event, int id);
 
+    int paintTimerID, stepTimerID;
+
 protected:
+    void paintEvent(QPaintEvent *);
     void mouseMoveEvent(QMouseEvent *event);
     void mousePressEvent(QMouseEvent *event);
-    void closeEvent(QCloseEvent *);
+    void timerEvent(QTimerEvent *event);
 
 signals:
-    void closed();
+    void playerChange(int playerID, int nxtPlayerID, int finished);
 };
 
 #endif // GAMEBOARD_H

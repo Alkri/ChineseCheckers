@@ -33,6 +33,7 @@ void wGameMenu::showLocalGameWindow()
     this->hide();
     // qDebug() << "Number of Players:" << numPlayer;
     LocalGame = new wInGame(nullptr, &numPlayer);
+    LocalGame->setAttribute(Qt::WA_DeleteOnClose);
     LocalGame->show();
     connect(LocalGame, &wInGame::closed, this, &wGameMenu::show);
 }

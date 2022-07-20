@@ -4,5 +4,11 @@
         <file>Resources/images/GameTitle2.png</file>
         <file>Resources/images/GameTitle3.png</file>
         <file>Resources/images/GameTitle4.png</file>
+        <file>Resources/images/blue.png</file>
+        <file>Resources/images/green.png</file>
+        <file>Resources/images/orange.png</file>
+        <file>Resources/images/purple.png</file>
+        <file>Resources/images/red.png</file>
+        <file>Resources/images/yellow.png</file>
     </qresource>
 </RCC>

@@ -8,41 +8,44 @@ GameBoard::GameBoard(QWidget *parent, int *nP)
     this->move(10,10);
     this->resize(880, 880);
     this->setMouseTracking(true);
-    //this->setPalette(QPalette(teamColor[0]));
+    //this->setPalette(QPalette(QColor(255, 0, 0)));
     //this->setAutoFillBackground(true);
 
+    // add playerID to playerList
     numPlayer = *nP;
     if (numPlayer == 2) playerList[1] = 1, playerList[2] = 4;
     if (numPlayer == 3) playerList[1] = 1, playerList[2] = 3, playerList[3] = 5;
     if (numPlayer == 4) playerList[1] = 1, playerList[2] = 2, playerList[3] = 4, playerList[4] = 5;
     if (numPlayer == 6) playerList[1] = 1, playerList[2] = 2, playerList[3] = 3, playerList[4] = 4, playerList[5] = 5, playerList[6] = 6;
 
+    // init chessSquare
     for (int i = 1; i <= 121; ++i) chessSquare[i].id = i;
-    // area 6
-    for (int i = 1; i <= 10; ++i) chessSquare[i].areaID = 6;
-    // area 5
-    for (int i = 11; i <= 14; ++i) chessSquare[i].areaID = 5;
-    for (int i = 24; i <= 26; ++i) chessSquare[i].areaID = 5;
-    for (int i = 36; i <= 37; ++i) chessSquare[i].areaID = 5;
-    chessSquare[47].areaID = 5;
-    // area 4
-    chessSquare[66].areaID = 4;
-    for (int i = 76; i <= 77; ++i) chessSquare[i].areaID = 4;
-    for (int i = 87; i <= 89; ++i) chessSquare[i].areaID = 4;
-    for (int i = 99; i <= 102; ++i) chessSquare[i].areaID = 4;
-    // area 3
-    for (int i = 112; i <= 121; ++i) chessSquare[i].areaID = 3;
-    // area 2
-    chessSquare[75].areaID = 2;
-    for (int i = 85; i <= 86; ++i) chessSquare[i].areaID = 2;
-    for (int i = 96; i <= 98; ++i) chessSquare[i].areaID = 2;
-    for (int i = 108; i <= 111; ++i) chessSquare[i].areaID = 2;
     // area 1
     for (int i = 20; i <= 23; ++i) chessSquare[i].areaID = 1;
     for (int i = 33; i <= 35; ++i) chessSquare[i].areaID = 1;
     for (int i = 45; i <= 46; ++i) chessSquare[i].areaID = 1;
     chessSquare[56].areaID = 1;
+    // area 2
+    chessSquare[75].areaID = 2;
+    for (int i = 85; i <= 86; ++i) chessSquare[i].areaID = 2;
+    for (int i = 96; i <= 98; ++i) chessSquare[i].areaID = 2;
+    for (int i = 108; i <= 111; ++i) chessSquare[i].areaID = 2;
+    // area 3
+    for (int i = 112; i <= 121; ++i) chessSquare[i].areaID = 3;
+    // area 4
+    chessSquare[66].areaID = 4;
+    for (int i = 76; i <= 77; ++i) chessSquare[i].areaID = 4;
+    for (int i = 87; i <= 89; ++i) chessSquare[i].areaID = 4;
+    for (int i = 99; i <= 102; ++i) chessSquare[i].areaID = 4;
+    // area 5
+    for (int i = 11; i <= 14; ++i) chessSquare[i].areaID = 5;
+    for (int i = 24; i <= 26; ++i) chessSquare[i].areaID = 5;
+    for (int i = 36; i <= 37; ++i) chessSquare[i].areaID = 5;
+    chessSquare[47].areaID = 5;
+    // area 6
+    for (int i = 1; i <= 10; ++i) chessSquare[i].areaID = 6;
 
+    // init chess
     // team 1
     chess[1][1].chessSquare = &chessSquare[chess[1][1].id = 112];
     chess[1][2].chessSquare = &chessSquare[chess[1][2].id = 113];
@@ -130,6 +133,8 @@ GameBoard::GameBoard(QWidget *parent, int *nP)
     for (int i = 11; i <= 10 + dBoard[15]; ++i) map[15][i] = tmp++;
     for (int i = 12; i <= 11 + dBoard[16]; ++i) map[16][i] = tmp++;
     for (int i = 13; i <= 12 + dBoard[17]; ++i) map[17][i] = tmp++;
+
+    // init edges
     for (int i = 1; i <= 17; ++i)
         for (int j = 1; j <= 17; ++j)
         {
@@ -142,6 +147,7 @@ GameBoard::GameBoard(QWidget *parent, int *nP)
             chessSquare[map[i][j]].nxt[5] = !map[i][j-1] ? nullptr : &chessSquare[map[i][j-1]];
         }
 
+    // init center coordinates
     QPointF nowPoint = QPointF(200, 30);
     int len = 59;
     for (int i = 1; i <= 17; ++i)
@@ -153,6 +159,10 @@ GameBoard::GameBoard(QWidget *parent, int *nP)
         }
         nowPoint += len * iy; nowPoint -= 17 * len * ix;
     }
+
+    // init Timer
+    paintTimerID = startTimer(8);
+    stepTimerID = startTimer(30000);
 }
 
 GameBoard::~GameBoard()
@@ -166,7 +176,7 @@ QLine GameBoard::makeQLine(int i, int j)
 
 void GameBoard::drawBackgroundLine(QPainter *painter)
 {
-    painter->setPen(QPen(Qt::black, 2, Qt::SolidLine));
+    painter->setPen(QPen(QColor(50, 50, 50), 2, Qt::SolidLine));
     //draw horizontal lines
     painter->drawLine(makeQLine(2, 3));
     painter->drawLine(makeQLine(4, 6));
@@ -220,24 +230,34 @@ void GameBoard::drawBackgroundLine(QPainter *painter)
 void GameBoard::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
-    drawBackgroundLine(&painter); //绘制棋格线
-    painter.setPen(QPen(Qt::black, 4, Qt::SolidLine));
-    painter.setBrush(QBrush(teamColor[0]));
+    painter.setRenderHint(QPainter::Antialiasing);
+    drawBackgroundLine(&painter);
+    painter.setPen(QPen(Qt::black, 4.5, Qt::SolidLine));
+    painter.setBrush(QBrush(QColor(240, 240, 240)));
     for (int i = 1; i <= 121; ++i)
-        painter.drawEllipse(pos[i], 20, 20); //绘制棋格
-    for (int i = 1; i <= numPlayer; ++i) //绘制棋子
-    {
-        painter.setBrush(QBrush(teamColor[playerList[i]]));
+        painter.drawEllipse(pos[i], 22, 22);
+    for (int i = 1; i <= numPlayer; ++i)
         for (int j = 1; j <= 10; ++j)
-            painter.drawEllipse(pos[chess[playerList[i]][j].id], 20, 20);
-    }
-    painter.setPen(QPen(QColor(160, 32, 240), 4, Qt::SolidLine));
+            painter.drawImage(pos[chess[playerList[i]][j].id] - QPointF(20, 20), teamColor[i]);
+    painter.setPen(QPen(QColor(150, 114, 73), 4.5, Qt::SolidLine));
     painter.setBrush(QBrush());
-    painter.drawEllipse(pos[mouseoverID], 20, 20);
-    if (selectedID) painter.drawRect(pos[selectedID].x() - 20, pos[selectedID].y() - 20, 40, 40);
+    if (mouseoverID) painter.drawEllipse(pos[mouseoverID], 22, 22);
+    if (selectedID)
+    {
+        painter.setPen(QPen(QColor(150, 114, 73), 8, Qt::SolidLine));
+        painter.setBrush(Qt::transparent);
+        QRectF tmp = QRectF((pos[selectedID] - QPointF(30, 30)).x(),(pos[selectedID] - QPointF(30, 30)).y(), 60, 60);
+        painter.drawArc(tmp, 60 * 16, 60 * 16);
+        painter.drawArc(tmp, 180 * 16, 60 * 16);
+        painter.drawArc(tmp, 300 * 16, 60 * 16);
+    }
     if (reachableSquareCount)
+    {
+        painter.setPen(QPen(Qt::black, 4.5, Qt::SolidLine));
+        painter.setBrush(QBrush(QColor(220, 159, 180)));
         for (int i = 1; i <= reachableSquareCount; ++i)
-            painter.drawEllipse(pos[reachableSquareID[i]], 20, 20);
+            painter.drawEllipse(pos[reachableSquareID[i]], 22, 22);
+    }
 }
 
 int GameBoard::mouseOnID(QMouseEvent *event, int id)
@@ -254,15 +274,7 @@ void GameBoard::checkWinner()
             flag &= (chessSquare[chess[playerList[i]][j].id].areaID + playerList[i] == 7);
         if (flag)
         {
-            switch (playerList[i])
-            {
-                case 1: QMessageBox::information(this,"游戏结束","玩家 Red 获得胜利！"); break;
-                case 2: QMessageBox::information(this,"游戏结束","玩家 Yellow 获得胜利！"); break;
-                case 3: QMessageBox::information(this,"游戏结束","玩家 Blue 获得胜利！"); break;
-                case 4: QMessageBox::information(this,"游戏结束","玩家 Green 获得胜利！"); break;
-                case 5: QMessageBox::information(this,"游戏结束","玩家 Cyan 获得胜利！"); break;
-                case 6: QMessageBox::information(this,"游戏结束","玩家 Pink 获得胜利！"); break;
-            }
+            QMessageBox::information(this,"游戏结束","玩家" + playerName[i] + "获得胜利！");
             this->close();
         }
     }
@@ -271,7 +283,6 @@ void GameBoard::checkWinner()
 
 int GameBoard::isAbleToReach(int id)
 {
-    return 1;
     int flag = 0;
     for (int i = 1; i <= reachableSquareCount; ++i)
         flag |= (reachableSquareID[i] == id);
@@ -325,14 +336,15 @@ void GameBoard::findReachableSquares(int id)
 
 void GameBoard::mouseMoveEvent(QMouseEvent *event)
 {
+    int flag = 0;
     for (int i = 1; i <= 121; ++i)
         if (mouseOnID(event, i))
         {
             mouseoverID = i;
+            flag = 1;
             break;
         }
-    update();
-    //qDebug() << id;
+    if (!flag) mouseoverID = 0;
 }
 
 void GameBoard::mousePressEvent(QMouseEvent *event)
@@ -344,9 +356,9 @@ void GameBoard::mousePressEvent(QMouseEvent *event)
             clickID = i;
             break;
         }
-    if (!clickID) return;
     if (!mouseStatus)
     {
+        if (!clickID) return;
         int isMyChess = 0;
         for (int i = 1; i <= 10; ++i)
             isMyChess |= (clickID == chess[playerList[nowPlayerID]][i].id);
@@ -354,8 +366,9 @@ void GameBoard::mousePressEvent(QMouseEvent *event)
         mouseStatus = 1;
         selectedID = clickID;
         findReachableSquares(selectedID);
+        return;
     }
-    else if (selectedID == clickID)
+    if (!clickID || selectedID == clickID)
     {
         selectedID = 0;
         mouseStatus = 0;
@@ -371,18 +384,42 @@ void GameBoard::mousePressEvent(QMouseEvent *event)
         chess[playerList[nowPlayerID]][id].id = clickID;
         chess[playerList[nowPlayerID]][id].chessSquare = &chessSquare[clickID];
         selectedID = 0;
-        ++nowPlayerID;
+        int tmp = nowPlayerID++;
         if (nowPlayerID > numPlayer) nowPlayerID = 1;
         mouseStatus = 0;
         reachableSquareCount = 0;
         memset(reachableSquareID, 0, sizeof(reachableSquareID));
         checkWinner();
+        emit playerChange(tmp, nowPlayerID, 1);
     }
-    update();
+    else
+    {
+        selectedID = 0;
+        mouseStatus = 0;
+        reachableSquareCount = 0;
+        memset(reachableSquareID, 0, sizeof(reachableSquareID));
+    }
     return;
 }
 
-void GameBoard::closeEvent(QCloseEvent *)
+void GameBoard::timerEvent(QTimerEvent *event)
 {
-    emit closed();
+    int timerID = event->timerId();
+    if (timerID == paintTimerID)
+    {
+        repaint();
+        return;
+    }
+    if (timerID == stepTimerID)
+    {
+        selectedID = 0;
+        int tmp = nowPlayerID++;
+        if (nowPlayerID > numPlayer) nowPlayerID = 1;
+        mouseStatus = 0;
+        reachableSquareCount = 0;
+        memset(reachableSquareID, 0, sizeof(reachableSquareID));
+        emit playerChange(tmp, nowPlayerID,0);
+        return;
+    }
+    return;
 }
