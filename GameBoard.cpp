@@ -2,6 +2,10 @@
 
 #include "GameBoard.h"
 
+GameBoard::GameBoard(QWidget *)
+{
+}
+
 GameBoard::GameBoard(QWidget *parent, int *nP)
 {
     this->setParent(parent);
@@ -163,6 +167,10 @@ GameBoard::GameBoard(QWidget *parent, int *nP)
     // init Timer
     paintTimerID = startTimer(8);
     stepTimerID = startTimer(30000);
+
+    // init sound effects
+    hitSound.setSource(QUrl::fromLocalFile(":/sounds/Resources/sounds/hit.wav"));
+
 }
 
 GameBoard::~GameBoard()
@@ -231,14 +239,61 @@ void GameBoard::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
+    // 绘制背景线
     drawBackgroundLine(&painter);
+    // 绘制边框
     painter.setPen(QPen(Qt::black, 4.5, Qt::SolidLine));
     painter.setBrush(QBrush(QColor(240, 240, 240)));
     for (int i = 1; i <= 121; ++i)
         painter.drawEllipse(pos[i], 22, 22);
+    // 绘制上一步提示
+    painter.setPen(QPen(Qt::red, 4, Qt::DashLine));
+    if (lastStep)
+    {
+        for (int i = path[0]; i > 1; --i)
+            painter.drawLine(makeQLine(path[i], path[i-1]));
+        painter.setPen(QPen(Qt::red, 10, Qt::SolidLine));
+        painter.setBrush(QBrush(Qt::red));
+        for (int i = path[0] - 1; i > 1; --i)
+            painter.drawEllipse(pos[path[i]], 1.5, 1.5);
+        painter.drawEllipse(pos[path[path[0]]], 3, 3);
+        painter.drawEllipse(pos[path[1]], 3, 3);
+    }
+    if (animeLock)
+    {
+        killTimer(stepTimerID);
+        stepTimerID = startTimer(30000);
+        for (int i = 1; i <= numPlayer; ++i)
+            for (int j = 1; j <= 10; ++j)
+                if (chess[playerList[i]][j].id != lastStep)
+                    painter.drawImage(pos[chess[playerList[i]][j].id] - QPointF(20, 20), teamColor[i]);
+        animeX += animedx;
+        animeY += animedy;
+        double scaleRate = 1.3 - 0.6 * fabs(animeX - animeDisCenter) / animeDis;
+        painter.drawImage(QPointF(animeX, animeY) - QPointF(20, 20) * scaleRate, teamColor[lastPlayerID].scaled(QSize(40, 40) * scaleRate));
+        if (fabs(animeX - pos[path[animeNextID]].x()) < 1 && fabs(animeY - pos[path[animeNextID]].y()) < 1)
+        {
+            animeX = pos[path[animeNextID]].x();
+            animeY = pos[path[animeNextID]].y();
+            animeNextID-=1;
+            if (!animeNextID)
+            {
+                animeLock = 0;
+                mouseStatus = 0;
+            }
+            animedx = (pos[path[animeNextID]].x() - animeX) / animeSpeedRate;
+            animedy = (pos[path[animeNextID]].y() - animeY) / animeSpeedRate;
+            animeDis = fabs(pos[path[animeNextID]].x() - animeX);
+            animeDisCenter = (pos[path[animeNextID]].x() + animeX) / 2;
+            hitSound.play();
+        }
+        return;
+    }
+    // 绘制棋子
     for (int i = 1; i <= numPlayer; ++i)
         for (int j = 1; j <= 10; ++j)
             painter.drawImage(pos[chess[playerList[i]][j].id] - QPointF(20, 20), teamColor[i]);
+    // 绘制悬浮、选中效果
     painter.setPen(QPen(QColor(150, 114, 73), 4.5, Qt::SolidLine));
     painter.setBrush(QBrush());
     if (mouseoverID) painter.drawEllipse(pos[mouseoverID], 22, 22);
@@ -254,10 +309,19 @@ void GameBoard::paintEvent(QPaintEvent *)
     if (reachableSquareCount)
     {
         painter.setPen(QPen(Qt::black, 4.5, Qt::SolidLine));
-        painter.setBrush(QBrush(QColor(220, 159, 180)));
+        painter.setBrush(QBrush(QColor(254, 223, 225)));
         for (int i = 1; i <= reachableSquareCount; ++i)
             painter.drawEllipse(pos[reachableSquareID[i]], 22, 22);
     }
+}
+
+void GameBoard::resetStatus()
+{
+    selectedID = 0;
+    mouseStatus = 0;
+    reachableSquareCount = 0;
+    memset(reachableSquareID, 0, sizeof(reachableSquareID));
+    memset(fromWhichSquare, 0, sizeof(fromWhichSquare));
 }
 
 int GameBoard::mouseOnID(QMouseEvent *event, int id)
@@ -296,10 +360,15 @@ void GameBoard::findReachableSquares(int id)
     for (int i = 1; i <= numPlayer; ++i)
         for (int j = 1; j <= 10; ++j)
            flag[chess[playerList[i]][j].id] = 1;
+    flag[id] = 0;
     for (int i = 0; i < 6; ++i)
     {
         if (chessSquare[id].nxt[i] == nullptr) continue;
-        if (!flag[chessSquare[id].nxt[i]->id]) reachableSquareID[++reachableSquareCount] = chessSquare[id].nxt[i]->id;
+        if (!flag[chessSquare[id].nxt[i]->id])
+        {
+            reachableSquareID[++reachableSquareCount] = chessSquare[id].nxt[i]->id;
+            fromWhichSquare[chessSquare[id].nxt[i]->id] = id;
+        }
     }
     q.push(id); check[id] = 1;
     while (!q.empty())
@@ -311,14 +380,16 @@ void GameBoard::findReachableSquares(int id)
             int mid = chessSquare[now].nxt[i]->id, step = 1, b = 0;
             while (!flag[mid])
             {
-                if (chessSquare[mid].nxt[i] != nullptr) mid = chessSquare[mid].nxt[i]->id;
+                if (chessSquare[mid].nxt[i] != nullptr)
+                    mid = chessSquare[mid].nxt[i]->id;
                 else {b = 1; break;}
                 ++step;
             }
             if (b) continue;
             while (step)
             {
-                if (chessSquare[mid].nxt[i] != nullptr) mid = chessSquare[mid].nxt[i]->id;
+                if (chessSquare[mid].nxt[i] != nullptr)
+                    mid = chessSquare[mid].nxt[i]->id;
                 else {b = 1; break;}
                 --step;
                 if (flag[mid]) break;
@@ -327,6 +398,7 @@ void GameBoard::findReachableSquares(int id)
             if (!step && !flag[mid] && !check[mid])
             {
                 reachableSquareID[++reachableSquareCount] = mid;
+                fromWhichSquare[mid] = now;
                 q.push(mid);
                 check[mid] = 1;
             }
@@ -347,8 +419,15 @@ void GameBoard::mouseMoveEvent(QMouseEvent *event)
     if (!flag) mouseoverID = 0;
 }
 
+void GameBoard::printPath(int now)
+{
+    if (fromWhichSquare[now]) printPath(fromWhichSquare[now]);
+    qDebug() << now;
+}
+
 void GameBoard::mousePressEvent(QMouseEvent *event)
 {
+    if (mouseStatus == 2) return;
     int clickID = 0;
     for (int i = 1; i <= 121; ++i)
         if (mouseOnID(event, i))
@@ -368,37 +447,46 @@ void GameBoard::mousePressEvent(QMouseEvent *event)
         findReachableSquares(selectedID);
         return;
     }
-    if (!clickID || selectedID == clickID)
-    {
-        selectedID = 0;
-        mouseStatus = 0;
-        reachableSquareCount = 0;
-        memset(reachableSquareID, 0, sizeof(reachableSquareID));
-    }
+    if (!clickID || selectedID == clickID) resetStatus();
     else if (isAbleToReach(clickID))
     {
         int id = 0;
+        lastStep = clickID;
+        lastPlayerID = nowPlayerID;
         for (int i = 1; i <= 10; ++i)
             if (selectedID == chess[playerList[nowPlayerID]][i].id) {id = i; break;}
-        //qDebug() << selectedID << " " << clickID << " " << id;
+//        qDebug() << selectedID << " " << clickID << " " << id;
         chess[playerList[nowPlayerID]][id].id = clickID;
         chess[playerList[nowPlayerID]][id].chessSquare = &chessSquare[clickID];
-        selectedID = 0;
+//        printPath(clickID);
         int tmp = nowPlayerID++;
         if (nowPlayerID > numPlayer) nowPlayerID = 1;
-        mouseStatus = 0;
-        reachableSquareCount = 0;
-        memset(reachableSquareID, 0, sizeof(reachableSquareID));
+
+        path[0] = 0;
+        int now = lastStep;
+        while (now)
+        {
+            path[++path[0]] = now;
+            now = fromWhichSquare[now];
+        }
+        resetStatus();
         checkWinner();
+
+        animeLock = 1;
+        animeNextID = path[0] - 1;
+        animeX = pos[path[path[0]]].x();
+        animeY = pos[path[path[0]]].y();
+        animedx = (pos[path[animeNextID]].x() - animeX) / animeSpeedRate;
+        animedy = (pos[path[animeNextID]].y() - animeY) / animeSpeedRate;
+        animeDis = fabs(pos[path[animeNextID]].x() - animeX);
+        animeDisCenter = (pos[path[animeNextID]].x() + animeX) / 2;
+        mouseStatus = 2;
+
         emit playerChange(tmp, nowPlayerID, 1);
+        killTimer(stepTimerID);
+        stepTimerID = startTimer(30000);
     }
-    else
-    {
-        selectedID = 0;
-        mouseStatus = 0;
-        reachableSquareCount = 0;
-        memset(reachableSquareID, 0, sizeof(reachableSquareID));
-    }
+    else resetStatus();
     return;
 }
 
@@ -422,4 +510,9 @@ void GameBoard::timerEvent(QTimerEvent *event)
         return;
     }
     return;
+}
+
+void GameBoard::closeEvent(QCloseEvent *)
+{
+    emit closed();
 }

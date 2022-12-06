@@ -3,20 +3,27 @@
 #include "wInGame.h"
 #include "ui_wInGame.h"
 
-wInGame::wInGame(QWidget *parent, int *nP)
+wInGame::wInGame(QWidget *parent, int *nP, int mode)
     : QWidget(parent), ui(new Ui::wInGame)
 {
     ui->setupUi(this);
     numPlayer = *nP;
-    gBoard = new GameBoard(this, nP);
-    gBoard->show();
-
+    if (mode == 1) {
+        gBoard = new GameBoard(this, nP);
+        gBoard->show();
+    }
+    else if (mode == 2) {
+        gBoard = new AIGameBoard(this);
+        gBoard->show();
+    }
     stepTimerLCD = new QLCDNumber(2, this);
     stepTimerLCD->move(1100, 10);
     stepTimerLCD->resize(81, 71);
     stepTimerLCD->display(30);
     LCDCountTimerID = startTimer(1000);
     connect(gBoard, &GameBoard::playerChange, this, &wInGame::playerChange);
+    connect(gBoard, &GameBoard::closed, this, &wInGame::close);
+    ui->textBrowser->append("现在是" + teamColor[1] + "的回合。");
 }
 
 wInGame::~wInGame()

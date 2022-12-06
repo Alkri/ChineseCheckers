@@ -23,9 +23,10 @@ public:
 
 private:
     Ui::wGameMenu *ui;
-    wInGame *LocalGame;
+    wInGame *LocalGame, *AIGame;
 
 public slots:
     void showLocalGameWindow();
+    void showAIGameWindow();
 };
 #endif // WGAMEMENU_H

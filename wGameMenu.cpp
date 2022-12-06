@@ -8,6 +8,7 @@ wGameMenu::wGameMenu(QWidget *parent)
 {
     ui->setupUi(this);
     connect(ui->btnLocalGame, &QPushButton::clicked, this, &wGameMenu::showLocalGameWindow);
+    connect(ui->btnAIGame, &QPushButton::clicked, this, &wGameMenu::showAIGameWindow);
 }
 
 wGameMenu::~wGameMenu()
@@ -32,8 +33,18 @@ void wGameMenu::showLocalGameWindow()
     }
     this->hide();
     // qDebug() << "Number of Players:" << numPlayer;
-    LocalGame = new wInGame(nullptr, &numPlayer);
+    LocalGame = new wInGame(nullptr, &numPlayer, 1);
     LocalGame->setAttribute(Qt::WA_DeleteOnClose);
     LocalGame->show();
     connect(LocalGame, &wInGame::closed, this, &wGameMenu::show);
+}
+
+void wGameMenu::showAIGameWindow()
+{
+    int numPlayer = 2;
+    this->hide();
+    AIGame = new wInGame(nullptr, &numPlayer, 2);
+    AIGame->setAttribute(Qt::WA_DeleteOnClose);
+    AIGame->show();
+    connect(AIGame, &wInGame::closed, this, &wGameMenu::show);
 }

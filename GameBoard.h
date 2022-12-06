@@ -8,6 +8,7 @@
 #include <QPoint>
 #include <QMouseEvent>
 #include <QMessageBox>
+#include <QSoundEffect>
 
 #include "chessPiece.h"
 #include "chessSquare.h"
@@ -17,11 +18,12 @@ class GameBoard : public QWidget
     Q_OBJECT
 
 public:
+    GameBoard(QWidget *parent);
     GameBoard(QWidget *parent, int *nP);
     ~GameBoard();
 
-private:
-    //numPlayer:玩家总数   playerList:玩家ID列表
+protected:
+    //numPlayer:玩家总数   nowPlayerID:当前玩家在ID列表中的index   playerList:玩家ID列表
     int numPlayer, nowPlayerID = 1, playerList[7];
 
     QImage teamColor[7] = {
@@ -52,25 +54,34 @@ private:
     QPointF ix = QPointF(1, 0), iy = QPointF(-0.5, sqrt(3)/2);
     int dBoard[18] = {0, 1, 2, 3, 4, 13, 12, 11, 10, 9, 10, 11, 12, 13, 4, 3, 2, 1};
 
+    void resetStatus();
     void checkWinner();
+    void printPath(int now);
     int isAbleToReach(int id);
     int reachableSquareCount = 0, reachableSquareID[122] = {0};
+    int lastStep = 0, fromWhichSquare[122] = {0}, path[122] = {0}; // path[0]记录数组长度
     void findReachableSquares(int id);
 
     int mouseoverID = 121, selectedID = 0;
-    int mouseStatus = 0; // 0: unselected   1: selected
+    int mouseStatus = 0; // 0: unselected   1: selected   2: in animation
     int mouseOnID(QMouseEvent *event, int id);
 
+    int lastPlayerID = 0;
+    int animeLock = 0, animeNextID = 0, animeSpeedRate = 20, animeDis = 0, animeDisCenter = 0; // speedrate越大动画越慢
+    double animeX = 0, animeY = 0, animedx = 0, animedy = 0;
     int paintTimerID, stepTimerID;
 
-protected:
+    QSoundEffect hitSound;
+
     void paintEvent(QPaintEvent *);
     void mouseMoveEvent(QMouseEvent *event);
     void mousePressEvent(QMouseEvent *event);
     void timerEvent(QTimerEvent *event);
+    void closeEvent(QCloseEvent *event);
 
 signals:
     void playerChange(int playerID, int nxtPlayerID, int finished);
+    void closed();
 };
 
 #endif // GAMEBOARD_H

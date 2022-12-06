@@ -5,6 +5,7 @@
 #include <QLCDNumber>
 
 #include "GameBoard.h"
+#include "AIGameBoard.h"
 
 namespace Ui
 {
@@ -16,7 +17,7 @@ class wInGame : public QWidget
     Q_OBJECT
 
 public:
-    wInGame(QWidget *parent = nullptr, int *nP = 0);
+    wInGame(QWidget *parent = nullptr, int *nP = 0, int mode = 0);
     ~wInGame();
 
 private:

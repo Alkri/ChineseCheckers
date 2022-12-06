@@ -11,4 +11,7 @@
         <file>Resources/images/red.png</file>
         <file>Resources/images/yellow.png</file>
     </qresource>
+    <qresource prefix="/sounds">
+        <file>Resources/sounds/hit.wav</file>
+    </qresource>
 </RCC>
