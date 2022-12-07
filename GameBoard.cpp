@@ -2,7 +2,7 @@
 
 #include "GameBoard.h"
 
-GameBoard::GameBoard(QWidget *)
+GameBoard::GameBoard()
 {
 }
 
@@ -309,7 +309,7 @@ void GameBoard::paintEvent(QPaintEvent *)
     if (reachableSquareCount)
     {
         painter.setPen(QPen(Qt::black, 4.5, Qt::SolidLine));
-        painter.setBrush(QBrush(QColor(254, 223, 225)));
+        painter.setBrush(QBrush(QColor(253, 183, 175)));
         for (int i = 1; i <= reachableSquareCount; ++i)
             painter.drawEllipse(pos[reachableSquareID[i]], 22, 22);
     }

@@ -18,7 +18,7 @@ class GameBoard : public QWidget
     Q_OBJECT
 
 public:
-    GameBoard(QWidget *parent);
+    GameBoard();
     GameBoard(QWidget *parent, int *nP);
     ~GameBoard();
 
