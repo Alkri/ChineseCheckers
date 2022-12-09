@@ -244,8 +244,11 @@ void GameBoard::paintEvent(QPaintEvent *)
     // 绘制边框
     painter.setPen(QPen(Qt::black, 4.5, Qt::SolidLine));
     painter.setBrush(QBrush(QColor(240, 240, 240)));
-    for (int i = 1; i <= 121; ++i)
+    for (int i = 1; i <= 121; ++i) {
         painter.drawEllipse(pos[i], 22, 22);
+        painter.drawText(pos[i]-QPointF(5,-5),QString::number(i,10));
+    }
+    return
     // 绘制上一步提示
     painter.setPen(QPen(Qt::red, 4, Qt::DashLine));
     if (lastStep)
